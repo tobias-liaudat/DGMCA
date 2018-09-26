@@ -2,3 +2,4 @@
 
 files/
 src/*/*.pyc
+src/*/.pyc
