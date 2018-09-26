@@ -4,6 +4,7 @@ import numpy as np
 from utils2 import *
 from misc_bgmca import *
 from BGMCA3 import BGMCA as dgmca
+from DGMCA import DGMCA as dgmca_new
 from GMCA import GMCA as gmca
 import copy as cp
 from tqdm import tqdm
@@ -76,7 +77,7 @@ try:
 
 
             time1 = time.time()
-            Results_sB0 = dgmca(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,UseP=1,verb=0,Init=0,Aposit=False,\
+            Results_sB0 = dgmca_new(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,UseP=1,verb=0,Init=0,Aposit=False,\
                                 BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=1.,AInit=None,tol=1e-6,subBlockSize=sizeBlock,\
                                 threshOpt=2,weightFMOpt=1,SCOpt=1,alphaEstOpt=1,optA=1,alpha_exp=alpha_init)
             time_results[2,it_n] = time.time() - time1
