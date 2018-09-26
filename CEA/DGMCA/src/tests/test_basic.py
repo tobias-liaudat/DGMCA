@@ -49,7 +49,7 @@ title_str = "testing_" + "_totalSize_" + str(totalSize) + "_numDivisors_" + str(
     + "_n_s_" + str(n_s) + "_numIts_" + str(numIts)
 print("Test saving name:")
 print(title_str)
-
+print('*******************************************')
 
 try:
 
