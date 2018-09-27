@@ -40,10 +40,13 @@ def reshapeDecImg(s,batch_size,J=0,normOpt=0,WNFactors=0):
 #   S_2D[r_id[0,0,n]:r_id[0,1,n],r_id[1,0,n]:r_id[1,1,n]] = 
 #   np.reshape(S_1D[line_id[it]:line_id[it+1]],(r_id[0,1,n]-r_id[0,0,n],r_id[1,1,n]-r_id[1,0,n]))
 
-#-- Defining block sizes for the reshaping
+
+#--- Import modules
     # import numpy as np
     # from starlet import *
-    
+
+#-- Main algorithm
+#-- Defining block sizes for the reshaping
     if J < 0:
         print('J must be greater or equal to zero. Goodbye.')
         return
@@ -152,9 +155,11 @@ def reshapeDecData(x,batch_size,J=0,normOpt=0,WNFactors=0):
 #          r_id[1,0,n] = y_first   ,   r_id[1,1,n] = y_last   ,   n : batch number
 #       ccX: Coarse resolution coefficients matrix. Stacking 1D vector coefficients into a 2D matrix
 
+#--- Import modules
     # import numpy as np
     # from starlet import *
 
+#-- Main algorithm
     n = x.shape[2]
     if J > 0:
         X = np.zeros((n,x.shape[0]*x.shape[1]*J))
@@ -193,11 +198,12 @@ def recoverDecImg(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 #   Output:
 #       X: 2D matrix corresponding to the 2D image that was formated into an 1D array
 
-    
+#--- Import modules
     # import numpy as np
     # import copy as cp
     # from starlet import *
     
+#-- Main algorithm
     n_batchs = r_id.shape[2]
     x_2D = np.zeros((r_id[0,1,n_batchs-1],r_id[1,1,n_batchs-1]))
     accS = 0
@@ -251,12 +257,15 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 #                  0: Deactivated. No normalization. The levels are used just as they are calculated from the wavelet decomposition
 #       WNFactors: Wavelet level factors. An array containing the scale value for each level (the variance of WGN wavelet decomposition level by level)
 #       * len(WNFactors) >= J if normOpt=1, in order to be able to normalize
-# 
+#       WGN: White Gaussian Noise 
+#
 #   Output:
 #       X: 2D matrices stacked over a third axis
 
+#--- Import modules
     # import numpy as np
 
+#-- Main algorithm
     n_imgs = X.shape[0]
     X_out = np.zeros((r_id[0,1,r_id.shape[2]-1],r_id[1,1,r_id.shape[2]-1],n_imgs))
 
@@ -272,27 +281,30 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 
 
 
-
 ###------------------------------------------------------------------------------###
 ################# Calculation of pseudo-inverse with threshold in the singular values
-
 def pInv(A):
+#--- Import modules
     # import numpy as np
 
+#-- Main algorithm
     min_cond = 1e-9
     Ra = np.dot(A.T,A)
     Ua,Sa,Va = np.linalg.svd(Ra)
     Sa[Sa < np.max(Sa)*min_cond] = np.max(Sa)*min_cond
     iRa = np.dot(Va.T,np.dot(np.diag(1./Sa),Ua.T))
+
     return np.dot(iRa,A.T)
 
 
 ###------------------------------------------------------------------------------###
  ################# Functions to estimate the Generalized Gaussian parameters
 def GG_g_func(x,b,mu):
+#--- Import modules
     # import scipy as sp
     # import numpy as np
-    
+
+#-- Main algorithm
     mu = mu *np.ones(x.shape)
     num = np.sum(((abs(x-mu))**b)*(np.log(abs(x-mu))))
     den = np.sum((abs(x-mu))**b) 
@@ -301,9 +313,11 @@ def GG_g_func(x,b,mu):
 
 
 def GG_gprime_func(x,b,mu):
+#--- Import modules
     # import scipy as sp
     # import numpy as np
 
+#-- Main algorithm
     mu = mu *np.ones(x.shape)
     
     result = 1/(b**2) - sp.special.polygamma(0,1/b)/(b**2) - sp.special.polygamma(1,1/b)/(b**3)
@@ -316,10 +330,12 @@ def GG_gprime_func(x,b,mu):
 
 
 def GG_parameter_estimation(x,optHalf = 0):
+#--- Import modules
     # import numpy as np
     # import scipy as sp
-    
-    maxIts = 100
+
+#-- Main algorithm    
+    maxIts = 100 # Enough for convergence
     
     m1 = np.mean(x)
     m2 = np.std(x)  
@@ -344,12 +360,14 @@ def GG_parameter_estimation(x,optHalf = 0):
     return beta, alpha, mu
 
 
-def alpha_r_estimation(A_mean, X, alpha_exp,n):
+def alpha_thresh_estimation(A_mean, X, alpha_exp,n):
 #   Sources must not be thresholded for this estimation. 
 #   Estimation sensible to the noise level of the observations.
 
+#--- Import modules
     # import numpy as np
 
+#-- Main algorithm    
     GG_mapping_param = np.array([ 4.5828 , -8.5807 ,  5.2610]) # Pre-calculed mapping model
     GG_alpha_est = np.zeros([n])
 
@@ -396,14 +414,15 @@ def alpha_r_estimation(A_mean, X, alpha_exp,n):
 
 
 ###------------------------------------------------------------------------------###
- ################# CALCULATE THE COLUMN PERMUTATION THAT WILL GIVE THE MAXIMUM TRACE
+ ################# Calculate the column permutation that will give the maximum trace
 
 def maximizeTrace(mat):
 #--- Import modules
     # import numpy as np
     # import copy as cp
     # from munkres import Munkres
-    
+   
+#-- Main algorithm     
     assert mat.shape[0] == mat.shape[1] # Matrix should be square
 #--- Use of the Kuhn-Munkres algorithm (or Hungarian Algorithm)    
     m = Munkres()
@@ -415,10 +434,11 @@ def maximizeTrace(mat):
     
     return (indexes[:,1]).astype(int)
 
-###------------------------------------------------------------------------------###
-################# CODE TO COMPUTE THE MIXING MATRIX CRITERION (AND SOLVES THE PERMUTATION INDETERMINACY)
 
-def CorrectPerm_fast(cA0,S0,cA,S,incomp=0):
+###------------------------------------------------------------------------------###
+################ Correct the permutation indeterminancy
+
+def DGMCA_CorrectPerm(cA0,cA):
 
     # import numpy as np
     # from scipy import special
@@ -427,6 +447,81 @@ def CorrectPerm_fast(cA0,S0,cA,S,incomp=0):
     # from copy import deepcopy as dp
     # import math
 
+    A0 = cp.copy(cA0) # Reference matrix
+    A = cp.copy(cA)
+
+    for r in range(0,A0.shape[1]):
+        A[:,r] = A[:,r]/(1e-24+lng.norm(A[:,r]))
+        A0[:,r] = A0[:,r]/(1e-24+lng.norm(A0[:,r]))
+
+    try:
+        Diff = abs(np.dot(lng.inv(np.dot(A0.T,A0)),np.dot(A0.T,A)))
+    except np.linalg.LinAlgError:
+        Diff = abs(np.dot(np.linalg.pinv(A0),A))
+        print('WARNING, PSEUDO INVERSE TO CORRECT PERMUTATIONS')
+
+    ind = maximizeTrace(Diff)
+
+    return A[:,ind],ind
+
+
+###------------------------------------------------------------------------------###
+# Function to apply the Frechet Mean over the columns of a group of matrices.
+# The columns are not in order so they have to be rearanged before regarding a reference matrix
+# The arangement is done by using only the A matrix and not the S matrix
+def DGMCA_FrechetMean(As = 0, Aref = 0, w = 0):
+#--- Input variables dimensions and values
+    # dim As = [n_obs,n_s,numBlock]
+    # dim Aref = [n_obs,n_s]
+    # dim w = [n_s,numBlock]
+
+#--- Import useful modules
+    # from FrechetMean import FrechetMean
+    # import numpy as np
+
+#--- Main code
+    A_FMean = np.zeros(Aref.shape)
+    
+#-- Correct permutations
+    for it1 in range(As.shape[2]):
+        As[:,:,it1],ind = DGMCA_CorrectPerm(Aref,As[:,:,it1])
+        w[:,it1] = w[ind,it1]
+
+#-- Do the Frechet Mean over each group of columns
+    for it2 in range(As.shape[1]):
+        if np.shape(As)[2] != 1:
+
+            if np.sum(abs(w[it2,:])>1e-8) == 1:
+                A_FMean[:,it2] = np.reshape(As[:,it2,abs(w[it2,:])>1e-8],As.shape[0])
+
+            elif np.sum(abs(w[it2,:])>1e-8) == 0:
+                A_FMean[:,it2] = Aref[:,it2]
+
+            else:
+                A_FMean[:,it2] = FrechetMean(As[:,it2,:],w=w[it2,:])
+
+        else:
+            A_FMean[:,it2] = np.reshape(As[:,it2,:],As.shape[0])#,len(As[:,it2,:]))
+        
+    return A_FMean
+
+
+
+### Function used in the performance evaluation ###
+
+###------------------------------------------------------------------------------###
+################# CODE TO COMPUTE THE MIXING MATRIX CRITERION (AND SOLVES THE PERMUTATION INDETERMINACY)
+
+def CorrectPerm_eval(cA0,S0,cA,S,incomp=0):
+#--- Import modules
+    # import numpy as np
+    # from scipy import special
+    # import scipy.linalg as lng
+    # import copy as cp
+    # from copy import deepcopy as dp
+    # import math
+
+#-- Main algorithm    
     A0 = cp.copy(cA0)
     A = cp.copy(cA)
 
@@ -530,39 +625,11 @@ def CorrectPerm_fast(cA0,S0,cA,S,incomp=0):
     return A0q,S0q,Aq,Sq,IndE
 
 
-################ CODE TO COMPUTE THE MIXING MATRIX CRITERION (AND SOLVES THE PERMUTATION INDETERMINACY)
-
-def easy_CorrectPerm(cA0,cA):
-
-    # import numpy as np
-    # from scipy import special
-    # import scipy.linalg as lng
-    # import copy as cp
-    # from copy import deepcopy as dp
-    # import math
-
-    A0 = cp.copy(cA0) # Reference matrix
-    A = cp.copy(cA)
-
-    for r in range(0,A0.shape[1]):
-        A[:,r] = A[:,r]/(1e-24+lng.norm(A[:,r]))
-        A0[:,r] = A0[:,r]/(1e-24+lng.norm(A0[:,r]))
-
-    try:
-        Diff = abs(np.dot(lng.inv(np.dot(A0.T,A0)),np.dot(A0.T,A)))
-    except np.linalg.LinAlgError:
-        Diff = abs(np.dot(np.linalg.pinv(A0),A))
-        print('WARNING, PSEUDO INVERSE TO CORRECT PERMUTATIONS')
-
-    ind = maximizeTrace(Diff)
-
-    return A[:,ind],ind
-
 
 ###------------------------------------------------------------------------------###
 ################# CODE TO COMPUTE THE MIXING MATRIX CRITERION (AND SOLVES THE PERMUTATION INDETERMINACY)
 
-def EvalCriterion_fast(A0,S0,A,S):
+def EvalCriterion_eval(A0,S0,A,S):
 
     # from copy import deepcopy as dp
     # import numpy as np
@@ -574,7 +641,7 @@ def EvalCriterion_fast(A0,S0,A,S):
     if abs(n-n_e) > 0:
         incomp=1
 
-    gA0,gS0,gA,gS,IndE = CorrectPerm_fast(A0,S0,A,S,incomp=incomp)
+    gA0,gS0,gA,gS,IndE = CorrectPerm_eval(A0,S0,A,S,incomp=incomp)
     n = np.shape(gA0)[1]
     n_e = np.shape(gA)[1]
     Diff = abs(np.dot(np.linalg.inv(np.dot(gA0.T,gA0)),np.dot(gA0.T,gA)))
@@ -597,6 +664,9 @@ def EvalCriterion_fast(A0,S0,A,S):
 
     return crit
 
+
+
+
 ###------------------------------------------------------------------------------###
 ################# Outlier distance calculation
 
@@ -606,7 +676,6 @@ def matrix_outlierDistance(A_FM = 0,Ai = 0):
     return np.amax(np.ones(np.shape(dist)) - dist)
 
 def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0):
-    # from utils2 import CorrectPerm_fast
     # import copy as cp
     # import numpy as np
 
@@ -625,7 +694,7 @@ def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0)
         cA = As_[:,:,it1]
         cS = Ss[:,lstBlocks[it1]:lstBlocks[it1+1]] # cS = Ss_[:,lstBlocks[it1]:lstBlocks[it1+1]]
 
-        A0q,S0q,Aq,Sq,IndE  = CorrectPerm_fast(Aref,S0,cA,cS,incomp=0)
+        A0q,S0q,Aq,Sq,IndE  = CorrectPerm_eval(Aref,S0,cA,cS,incomp=0)
 
         As_[:,:,it1] = Aq 
         # Ss_[:,lstBlocks[it1]:lstBlocks[it1+1]] = Sq
@@ -664,7 +733,7 @@ def matrix_FrechetMean(As = 0, Ss = 0, Aref = 0, Sref = 0 ,sizeBlock = 0, w = 0)
         cA = As[:,:,it1]
         cS = Ss[:,lstBlocks[it1]:lstBlocks[it1+1]]
 
-        A0q,S0q,Aq,Sq,IndE  = CorrectPerm_fast(Aref,S0,cA,cS,incomp=0)
+        A0q,S0q,Aq,Sq,IndE  = CorrectPerm_eval(Aref,S0,cA,cS,incomp=0)
 
         As[:,:,it1] = Aq 
         Ss[:,lstBlocks[it1]:lstBlocks[it1+1]] = Sq
@@ -677,74 +746,6 @@ def matrix_FrechetMean(As = 0, Ss = 0, Aref = 0, Sref = 0 ,sizeBlock = 0, w = 0)
 
         else:
             A_FMean[:,it2] = np.reshape(As[:,it2,:],len(As[:,it2,:]))
-        
-    return A_FMean
-
-##---------------------------------------------##
-# Function to apply the Frechet Mean over the columns of a group of matrices.
-# The columns are not in order so they have to be rearanged before regarding a reference matrix
-# The arangement is done only using the A matrix and not the S matrix
-def easy_matrix_FrechetMean(As = 0, Aref = 0, w = 0):
-#--- Input variables dimensions and values
-    # dim As = [n_obs,n_s,numBlock]
-    # dim Aref = [n_obs,n_s]
-
-#--- Import useful modules
-    # from FrechetMean import FrechetMean
-    # import numpy as np
-
-    A_FMean = np.zeros(Aref.shape)
-
-    # Correct permutations
-    for it1 in range(As.shape[2]):
-        As[:,:,it1],ind = easy_CorrectPerm(Aref,As[:,:,it1]) 
-
-# Do the Frechet Mean over each group of columns
-    for it2 in range(As.shape[1]):
-        if np.shape(As)[2] != 1:
-            A_FMean[:,it2] = FrechetMean(As[:,it2,:],w=w)
-        else:
-            A_FMean[:,it2] = np.reshape(As[:,it2,:],len(As[:,it2,:]))
-        
-    return A_FMean
-
-
-##---------------------------------------------##
-# Function to apply the Frechet Mean over the columns of a group of matrices.
-# The columns are not in order so they have to be rearanged before regarding a reference matrix
-# The arangement is done only using the A matrix and not the S matrix
-def easy_matrix_FrechetMean2(As = 0, Aref = 0, w = 0):
-#--- Input variables dimensions and values
-    # dim As = [n_obs,n_s,numBlock]
-    # dim Aref = [n_obs,n_s]
-    # dim w = [n_s,numBlock]
-
-#--- Import useful modules
-    # from FrechetMean import FrechetMean
-    # import numpy as np
-
-    A_FMean = np.zeros(Aref.shape)
-    
-    # Correct permutations
-    for it1 in range(As.shape[2]):
-        As[:,:,it1],ind = easy_CorrectPerm(Aref,As[:,:,it1])
-        w[:,it1] = w[ind,it1]
-
-# Do the Frechet Mean over each group of columns
-    for it2 in range(As.shape[1]):
-        if np.shape(As)[2] != 1:
-
-            if np.sum(abs(w[it2,:])>1e-8) == 1:
-                A_FMean[:,it2] = np.reshape(As[:,it2,abs(w[it2,:])>1e-8],As.shape[0])
-
-            elif np.sum(abs(w[it2,:])>1e-8) == 0:
-                A_FMean[:,it2] = Aref[:,it2]
-
-            else:
-                A_FMean[:,it2] = FrechetMean(As[:,it2,:],w=w[it2,:])
-
-        else:
-            A_FMean[:,it2] = np.reshape(As[:,it2,:],As.shape[0])#,len(As[:,it2,:]))
         
     return A_FMean
 
@@ -840,4 +841,3 @@ def matrixCompletion(A_block,A_mean):
 
     return A_block 
 
-    

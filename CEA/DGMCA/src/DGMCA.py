@@ -5,9 +5,11 @@ Solving de BSS problem when the images are sparse in another domain.
 The parallelization is done only over the columns.
 The three weighting schemes and the three thresholding strategies are functional.
 Permutation of the columns is optional via the shufflingOpt parameter.
+Threshold strategy: using exponential decay and norm_inf
+Weight for FM strategy: SNR over the S space
 
   Usage:
-    Results = GMCA(X,n=2,maxts = 7,mints=3,nmax=100,L0=0,verb=0,Init=0,BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=0.5,AInit=None,tol=1e-6)
+    Results = GMCA(X,n=2,maxts = 7,mints=3,nmax=100,L0=0,verb=0,Init=0,BlockSize= None,Kmax=0.5,AInit=None,tol=1e-6)
 
 
   Inputs:
@@ -19,23 +21,13 @@ Permutation of the columns is optional via the shufflingOpt parameter.
     nmax  : scalar (number of iterations)
     Init  : scalar (if set to 0: PCA-based initialization, if set to 1: random initialization)
     verb   : boolean (if set to 1, in verbose mode)
-    NoiseStd : m x 1 array (noise standard deviation per observations)
-    IndNoise : array (indicates the indices of the columns of S from which the k-mad is applied)
     Kmax : scalar (maximal L0 norm of the sources. Being a percentage, it should be between 0 and 1)
     AInit : if not None, provides an initial value for the mixing matrix
     tol : tolerance on the mixing matrix criterion
-    threshOpt : Thresholding option
-                # 0 --> Threshold using MAD of each block and the relaxing percentage of taken values
-                # 1 --> Threshold using median of MADs of each block (using the relaxing percentage of taken values) 
-                # 2 --> Threshold using exponential decay and norm_inf
-    weightFMOpt : Option for the weighting strategy in the FM
-                # 0 --> SNR over the X space
-                # 1 --> SNR over the S space
-                # 2 --> regular weighting (w=1/n)
     SCOpt : Weighting for the partially correlated sources
                 # 0 --> Deactivated
                 # 1 --> Activated
-    alphaEstOpt : Use online estimation of alpha_exp thresholding parameter (for weightFMOpt=2)
+    alphaEstOpt : Use online estimation of alpha_exp thresholding parameter
                 # 0 --> Deactivated
                 # 1 --> Activated
 
@@ -56,6 +48,10 @@ Permutation of the columns is optional via the shufflingOpt parameter.
 
 """
 
+import numpy as np
+import scipy.linalg as lng
+import copy as cp
+import time
 from utils2 import randperm
 from utils2 import mad
 from FrechetMean import FrechetMean
@@ -64,13 +60,9 @@ from starlet import *
 
 ################# AMCA Main function
 
-def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,NoiseStd=[],IndNoise=[],\
-    Kmax=0.5,AInit=None,tol=1e-6,subBlockSize=100,threshOpt=1,weightFMOpt=1,alphaEstOpt=1,optA =0,SCOpt=1,alpha_exp=2.,J=0\
+def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,\
+    Kmax=0.5,AInit=None,tol=1e-6,subBlockSize=100,alphaEstOpt=1,SCOpt=1,alpha_exp=2.,J=0\
     ,WNFactors=0,normOpt=0):
-
-    import numpy as np
-    import scipy.linalg as lng
-    import copy as cp
 
     nX = np.shape(X);
     m = nX[0];t = nX[1]  
@@ -104,8 +96,7 @@ def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize=
 
     # Call the core algorithm
     S,A = Core_DGMCA(X=Xw,A=A,S=S,n=n,maxts=maxts,q_f=q_f,BlockSize = BlockSize,tol=tol,kend = mints,nmax=nmax,L0=L0,\
-        verb=verb,IndNoise=IndNoise,Kmax=Kmax,NoiseStd=NoiseStd,subBlockSize=subBlockSize,threshOpt=threshOpt,\
-        weightFMOpt=weightFMOpt,SCOpt=SCOpt,optA=optA,alphaEstOpt=alphaEstOpt,alpha_exp=alpha_exp);
+        verb=verb,Kmax=Kmax,subBlockSize=subBlockSize,SCOpt=SCOpt,alphaEstOpt=alphaEstOpt,alpha_exp=alpha_exp);
 
     if J > 0:
         Ra = np.dot(A.T,A)
@@ -127,23 +118,19 @@ def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize=
 
 ################# DGMCA internal code
 
-def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=1,verb=0,IndNoise=[],Kmax=0.5,\
-    NoiseStd=[],tol=1e-6, subBlockSize=100, threshOpt=1,weightFMOpt=0, SCOpt=1,optA=0,alphaEstOpt=1,alpha_exp=2.):
+def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=1,verb=0,Kmax=0.5,\
+    tol=1e-6, subBlockSize=100, SCOpt=1,alphaEstOpt=1,alpha_exp=2.):
 
 #--- Import useful modules
-    import numpy as np
-    import scipy.linalg as lng
-    import copy as cp
-    import scipy.io as sio
-    import time
+    # import numpy as np
+    # import scipy.linalg as lng
+    # import copy as cp
+    # import time
 
 #--- Initialization variables
-    shufflingOpt = 1
+    shufflingOpt = 1 # Complete shuffle of the columns (pixels)
 
-    k = maxts
-    dk = (k-kend)/((nmax-1)*1.)
     perc = Kmax/(nmax*1.) # Kmax should be 1
-
     Aold = cp.deepcopy(A)
 
     if SCOpt == 1: 
@@ -200,14 +187,12 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
 
 #------ Estimation of the GG parameters
         if it == GG_maxIt and GG_warm_start==1:
-            alpha_exp = alpha_r_estimation(A_mean, X, alpha_exp,n)
-            A_mean = A_init
+            alpha_exp = alpha_thresh_estimation(A_mean, X, alpha_exp,n)
+            A_mean = A_init # Restart from the initialization point
             S = np.dot(A_mean.T,X)
 
             GG_warm_start = 0
-            it = 2
-            k = maxts
-            dk = (k-kend)/((nmax-1)*1.)
+            it = 2 # Restart the main loop
             if SCOpt == 1: 
                 alpha = 1
                 dalpha = (alpha-q_f)/nmax
@@ -249,15 +234,13 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
             mad_S = np.median(mad_block,axis=1)             
 
 #------ Threshold calculation
-        if threshOpt == 2:
-            for r in range(n):
-                # sigma_noise = mad(S[r,:]) # Suposed to be known
-                sigma_noise = mad_S[r]                       
-                threshold[r] = K*sigma_noise + (S_norm_inf[r] - K*sigma_noise)*np.exp(-1*(it-2)*alpha_exp)
+        for r in range(n):
+            # sigma_noise = mad(S[r,:]) # Suposed to be known
+            sigma_noise = mad_S[r]                       
+            threshold[r] = K*sigma_noise + (S_norm_inf[r] - K*sigma_noise)*np.exp(-1*(it-2)*alpha_exp)
 
 #-------------------------------------
 ##----- Block loop
-#------ Estimate the sources
         for itB in range(numBlocks):
 
             # print('itB: %d / %d'%(itB,numBlocks))
@@ -270,12 +253,12 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
 
                 iB = indBBlocks[itB] # Batch to be treated
 
-                # Using blocks
-                IndBatch = randperm(len(indS))  #---- mini-batch amongst available sources
-
+                # Using blocks (in the GMCA way)
+                IndBatch = randperm(len(indS))  # Mini-batch amongst available sources
                 if BlockSize+1 < len(indS):
                     indS = indS[IndBatch[0:BlockSize]]
 
+#-------------- Estimate the sources
                 Ra = np.dot(A[:,indS].T,A[:,indS])
                 Ua,Sa,Va = np.linalg.svd(Ra)
                 Sa[Sa < np.max(Sa)*1e-9] = np.max(Sa)*1e-9
@@ -328,8 +311,7 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
                     Stemp[r,:] = St
 
             #------ Weight calculation for the FM
-                    if weightFMOpt == 1:
-                        w_FM[r,iB] = np.sum(St**2)/((len(St)*1.)*(sigma_X_j*piA_normF2))
+                    w_FM[r,iB] = np.sum(St**2)/((len(St)*1.)*(sigma_X_j*piA_normF2))
 
         #------ End of the sources loop
                 S[indS[src_nnz],valB[iB]:valB[iB+1]] = Stemp[indS[src_nnz],:]
@@ -377,7 +359,7 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
                 np.reshape(np.sum(abs(w_FM[nnz_cols,:]),axis=1)*1.,((np.sum(abs(w_FM[nnz_cols,:]),axis=1)*1.).shape[0],1)))
 
 #---------- Fusion method: The Frechet Mean
-            A_mean = easy_matrix_FrechetMean2(As = A_block, Aref = A_mean, w = w_FM)
+            A_mean = DGMCA_FrechetMean(As = A_block, Aref = A_mean, w = w_FM)
 
 
         Aold = cp.deepcopy(A_mean)
@@ -399,5 +381,5 @@ def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=
     if shufflingOpt == 1:
         S = S[:,original_id]
 
-
+# Goodbye
     return S,A_mean
