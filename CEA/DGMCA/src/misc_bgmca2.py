@@ -1,6 +1,15 @@
 # Miscellaneous functions for BGMCA
 
+import numpy as np
+import scipy as sp
+import copy as cp
+from copy import deepcopy as dp
 from starlet import *
+from munkres import Munkres
+from scipy import special
+import scipy.linalg as lng
+import math
+from FrechetMean import FrechetMean
 
 ###------------------------------------------------------------------------------###
 ################# 2D array reformating into 1D array with sequential 2D square batches.
@@ -32,7 +41,7 @@ def reshapeDecImg(s,batch_size,J=0,normOpt=0,WNFactors=0):
 #   np.reshape(S_1D[line_id[it]:line_id[it+1]],(r_id[0,1,n]-r_id[0,0,n],r_id[1,1,n]-r_id[1,0,n]))
 
 #-- Defining block sizes for the reshaping
-    import numpy as np
+    # import numpy as np
     # from starlet import *
     
     if J < 0:
@@ -143,7 +152,7 @@ def reshapeDecData(x,batch_size,J=0,normOpt=0,WNFactors=0):
 #          r_id[1,0,n] = y_first   ,   r_id[1,1,n] = y_last   ,   n : batch number
 #       ccX: Coarse resolution coefficients matrix. Stacking 1D vector coefficients into a 2D matrix
 
-    import numpy as np
+    # import numpy as np
     # from starlet import *
 
     n = x.shape[2]
@@ -185,8 +194,8 @@ def recoverDecImg(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 #       X: 2D matrix corresponding to the 2D image that was formated into an 1D array
 
     
-    import numpy as np
-    import copy as cp
+    # import numpy as np
+    # import copy as cp
     # from starlet import *
     
     n_batchs = r_id.shape[2]
@@ -246,7 +255,7 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 #   Output:
 #       X: 2D matrices stacked over a third axis
 
-    import numpy as np
+    # import numpy as np
 
     n_imgs = X.shape[0]
     X_out = np.zeros((r_id[0,1,r_id.shape[2]-1],r_id[1,1,r_id.shape[2]-1],n_imgs))
@@ -268,7 +277,7 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 ################# Calculation of pseudo-inverse with threshold in the singular values
 
 def pInv(A):
-    import numpy as np
+    # import numpy as np
 
     min_cond = 1e-9
     Ra = np.dot(A.T,A)
@@ -281,8 +290,8 @@ def pInv(A):
 ###------------------------------------------------------------------------------###
  ################# Functions to estimate the Generalized Gaussian parameters
 def GG_g_func(x,b,mu):
-    import scipy as sp
-    import numpy as np
+    # import scipy as sp
+    # import numpy as np
     
     mu = mu *np.ones(x.shape)
     num = np.sum(((abs(x-mu))**b)*(np.log(abs(x-mu))))
@@ -292,8 +301,8 @@ def GG_g_func(x,b,mu):
 
 
 def GG_gprime_func(x,b,mu):
-    import scipy as sp
-    import numpy as np
+    # import scipy as sp
+    # import numpy as np
 
     mu = mu *np.ones(x.shape)
     
@@ -307,8 +316,8 @@ def GG_gprime_func(x,b,mu):
 
 
 def GG_parameter_estimation(x,optHalf = 0):
-    import numpy as np
-    import scipy as sp
+    # import numpy as np
+    # import scipy as sp
     
     maxIts = 100
     
@@ -334,14 +343,66 @@ def GG_parameter_estimation(x,optHalf = 0):
     
     return beta, alpha, mu
 
+
+def alpha_r_estimation(A_mean, X, alpha_exp,n):
+#   Sources must not be thresholded for this estimation. 
+#   Estimation sensible to the noise level of the observations.
+
+    # import numpy as np
+
+    GG_mapping_param = np.array([ 4.5828 , -8.5807 ,  5.2610]) # Pre-calculed mapping model
+    GG_alpha_est = np.zeros([n])
+
+#-- Source estimation from the mixing matrix estimation (A)
+    Ra = np.dot(A_mean.T,A_mean)
+    Ua,Sa,Va = np.linalg.svd(Ra)
+    Sa[Sa < np.max(Sa)*1e-9] = np.max(Sa)*1e-9
+    iRa = np.dot(Va.T,np.dot(np.diag(1./Sa),Ua.T))
+    piA = np.dot(iRa,A_mean.T)
+    S = np.dot(piA,X) 
+
+#-- Rho estimation
+    for r in range(n):
+        S_sort = abs(cp.deepcopy(S[r,:]))
+        S_sort.sort(axis=0)
+        S_sort = S_sort[S_sort>0]
+
+        if len(S_sort) != 0:
+            S_sort = S_sort/(np.sum(S_sort))
+            params = GG_parameter_estimation(S_sort,optHalf = 1)
+            GG_alpha_est[r] = params[0]
+        else:
+            GG_alpha_est[r] = 0
+
+#-- Alpha_exp parameter estimation
+    GG_alpha_est = GG_alpha_est[GG_alpha_est>0]
+    GG_alpha_est = GG_alpha_est[~np.isnan(GG_alpha_est)]
+    if len(GG_alpha_est) > 0:
+        GG_alpha_est = np.median(GG_alpha_est) # Robust to outliers
+    else:
+        GG_alpha_est = alpha_exp # We stay with the default value
+
+#-- Mapping the rho estimate with the alpha_exp value       
+    GG_alpha_est = GG_mapping_param[0]*(GG_alpha_est**2) + GG_mapping_param[1]*GG_alpha_est \
+                    + GG_mapping_param[2]*np.ones(GG_alpha_est.shape) # Use of a quadratic model
+
+#-- Thresholding values to avoid divergences (Model valid in that interval)
+    if GG_alpha_est > 20.:
+        GG_alpha_est = 20.
+    elif GG_alpha_est < 0.01:
+        GG_alpha_est = 0.01
+
+    return GG_alpha_est
+
+
 ###------------------------------------------------------------------------------###
  ################# CALCULATE THE COLUMN PERMUTATION THAT WILL GIVE THE MAXIMUM TRACE
 
 def maximizeTrace(mat):
 #--- Import modules
-    import numpy as np
-    import copy as cp
-    from munkres import Munkres
+    # import numpy as np
+    # import copy as cp
+    # from munkres import Munkres
     
     assert mat.shape[0] == mat.shape[1] # Matrix should be square
 #--- Use of the Kuhn-Munkres algorithm (or Hungarian Algorithm)    
@@ -359,12 +420,12 @@ def maximizeTrace(mat):
 
 def CorrectPerm_fast(cA0,S0,cA,S,incomp=0):
 
-    import numpy as np
-    from scipy import special
-    import scipy.linalg as lng
-    import copy as cp
-    from copy import deepcopy as dp
-    import math
+    # import numpy as np
+    # from scipy import special
+    # import scipy.linalg as lng
+    # import copy as cp
+    # from copy import deepcopy as dp
+    # import math
 
     A0 = cp.copy(cA0)
     A = cp.copy(cA)
@@ -473,12 +534,12 @@ def CorrectPerm_fast(cA0,S0,cA,S,incomp=0):
 
 def easy_CorrectPerm(cA0,cA):
 
-    import numpy as np
-    from scipy import special
-    import scipy.linalg as lng
-    import copy as cp
-    from copy import deepcopy as dp
-    import math
+    # import numpy as np
+    # from scipy import special
+    # import scipy.linalg as lng
+    # import copy as cp
+    # from copy import deepcopy as dp
+    # import math
 
     A0 = cp.copy(cA0) # Reference matrix
     A = cp.copy(cA)
@@ -504,7 +565,7 @@ def easy_CorrectPerm(cA0,cA):
 def EvalCriterion_fast(A0,S0,A,S):
 
     # from copy import deepcopy as dp
-    import numpy as np
+    # import numpy as np
 
     n = np.shape(A0)[1]
     n_e = np.shape(A)[1]
@@ -540,14 +601,14 @@ def EvalCriterion_fast(A0,S0,A,S):
 ################# Outlier distance calculation
 
 def matrix_outlierDistance(A_FM = 0,Ai = 0):
-    import numpy as np
+    # import numpy as np
     dist = np.abs(np.diag(np.dot(A_FM.T,Ai)))
     return np.amax(np.ones(np.shape(dist)) - dist)
 
 def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0):
     # from utils2 import CorrectPerm_fast
-    import copy as cp
-    import numpy as np
+    # import copy as cp
+    # import numpy as np
 
     As_ = cp.deepcopy(As)
     # Ss_ = cp.deepcopy(Ss) # FAST_
@@ -585,9 +646,8 @@ def matrix_FrechetMean(As = 0, Ss = 0, Aref = 0, Sref = 0 ,sizeBlock = 0, w = 0)
     # numBlock = As.shape[2]
 
 #--- Import useful modules
-    from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
-    import numpy as np
+    # from FrechetMean import FrechetMean
+    # import numpy as np
 
 #--- Main code   
     A_FMean = np.zeros(Aref.shape)
@@ -630,9 +690,8 @@ def easy_matrix_FrechetMean(As = 0, Aref = 0, w = 0):
     # dim Aref = [n_obs,n_s]
 
 #--- Import useful modules
-    from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
-    import numpy as np
+    # from FrechetMean import FrechetMean
+    # import numpy as np
 
     A_FMean = np.zeros(Aref.shape)
 
@@ -661,9 +720,8 @@ def easy_matrix_FrechetMean2(As = 0, Aref = 0, w = 0):
     # dim w = [n_s,numBlock]
 
 #--- Import useful modules
-    from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
-    import numpy as np
+    # from FrechetMean import FrechetMean
+    # import numpy as np
 
     A_FMean = np.zeros(Aref.shape)
     
@@ -696,8 +754,8 @@ def easy_matrix_FrechetMean2(As = 0, Aref = 0, w = 0):
 
 def unmix_cgsolve(MixMat,X,tol=1e-6,maxiter=100,verbose=0):
 
-    import numpy as np
-    from copy import deepcopy as dp
+    # import numpy as np
+    # from copy import deepcopy as dp
 
     b = np.dot(MixMat.T,X)
     A = np.dot(MixMat.T,MixMat)
@@ -743,7 +801,7 @@ def unmix_cgsolve(MixMat,X,tol=1e-6,maxiter=100,verbose=0):
 
 def matrixCompletion(A_block,A_mean):
 
-    import numpy as np
+    # import numpy as np
     tol = 1e-4
 
     A_est = np.zeros(A_mean.shape)
@@ -781,3 +839,5 @@ def matrixCompletion(A_block,A_mean):
         A_block[:,:,it_m] = aux_mat
 
     return A_block 
+
+    

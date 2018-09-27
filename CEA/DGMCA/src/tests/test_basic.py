@@ -52,67 +52,67 @@ print("Test saving name:")
 print(title_str)
 print('*******************************************')
 
-try:
+# try:
 
-    for it_n in tqdm(range(numIts)):
+for it_n in tqdm(range(numIts)):
 
-        X,X0,A0,S0,N = Make_Experiment_GG(n_s=n_s,n_obs=n_obs,t_samp=totalSize,noise_level=60.0,\
-                                          dynamic=0,CondNumber=1,alpha=rho)
+    X,X0,A0,S0,N = Make_Experiment_GG(n_s=n_s,n_obs=n_obs,t_samp=totalSize,noise_level=60.0,\
+                                      dynamic=0,CondNumber=1,alpha=rho)
+    time1 = time.time()
+    Results_sB_totSC = gmca(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,UseP=1,verb=0,Init=0,\
+                Aposit=False,BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=1.,AInit=None,tol=1e-6,threshOpt=1\
+                ,SCOpt=1)
+    time_results[0,it_n] = time.time() - time1
+    A_sB_totSC = Results_sB_totSC['mixmat']
+    S_sB_totSC = Results_sB_totSC['sources']
+    crit_sB_totSC = EvalCriterion_fast(A0,S0,A_sB_totSC,S_sB_totSC) 
+    ca_final_sB_totSC[0,it_n] = crit_sB_totSC['ca_mean']
+    ca_final_sB_totSC[1,it_n] = crit_sB_totSC['ca_med']
+
+
+    for it1 in range(len(divisors)):
+
+        numBlock = totalSize/divisors[it1]
+        sizeBlock = divisors[it1]
+
+
         time1 = time.time()
-        Results_sB_totSC = gmca(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,UseP=1,verb=0,Init=0,\
-                    Aposit=False,BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=1.,AInit=None,tol=1e-6,threshOpt=1\
-                    ,SCOpt=1)
-        time_results[0,it_n] = time.time() - time1
-        A_sB_totSC = Results_sB_totSC['mixmat']
-        S_sB_totSC = Results_sB_totSC['sources']
-        crit_sB_totSC = EvalCriterion_fast(A0,S0,A_sB_totSC,S_sB_totSC) 
-        ca_final_sB_totSC[0,it_n] = crit_sB_totSC['ca_mean']
-        ca_final_sB_totSC[1,it_n] = crit_sB_totSC['ca_med']
+        Results_sB0 = dgmca_new(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,verb=0,Init=0,\
+                            BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=1.,AInit=None,tol=1e-6,subBlockSize=sizeBlock,\
+                            threshOpt=2,weightFMOpt=1,SCOpt=1,alphaEstOpt=1,optA=1,alpha_exp=alpha_init)
+        time_results[2,it_n] = time.time() - time1
+        A_sB0 = Results_sB0['mixmat']
+        S_sB0 = Results_sB0['sources']
+        crit_sB0 = EvalCriterion_fast(A0,S0,A_sB0,S_sB0) 
+        ca_final_sB0[0,it1,it_n] = crit_sB0['ca_mean']
+        ca_final_sB0[1,it1,it_n] = crit_sB0['ca_med']
 
 
-        for it1 in range(len(divisors)):
+print('******************* Results ************************')
+print('-10*np.log10(ca_final_sB_totSC): ')
+print(-10*np.log10(ca_final_sB_totSC))
+print('-10*np.log10(ca_final_sB0): ')
+print(-10*np.log10(ca_final_sB0))
+print('*******************************************')
 
-            numBlock = totalSize/divisors[it1]
-            sizeBlock = divisors[it1]
+# Save variables
+title_ca_final_sB0 = data_path + 'ca_final_sB0' + title_str  
+np.save(title_ca_final_sB0,ca_final_sB0)
+title_ca_final_sB_totSC = data_path + 'ca_final_sB_totSC' + title_str  
+np.save(title_ca_final_sB_totSC,ca_final_sB_totSC)
 
+# except:
 
-            time1 = time.time()
-            Results_sB0 = dgmca_new(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,UseP=1,verb=0,Init=0,Aposit=False,\
-                                BlockSize= None,NoiseStd=[],IndNoise=[],Kmax=1.,AInit=None,tol=1e-6,subBlockSize=sizeBlock,\
-                                threshOpt=2,weightFMOpt=1,SCOpt=1,alphaEstOpt=1,optA=1,alpha_exp=alpha_init)
-            time_results[2,it_n] = time.time() - time1
-            A_sB0 = Results_sB0['mixmat']
-            S_sB0 = Results_sB0['sources']
-            crit_sB0 = EvalCriterion_fast(A0,S0,A_sB0,S_sB0) 
-            ca_final_sB0[0,it1,it_n] = crit_sB0['ca_mean']
-            ca_final_sB0[1,it1,it_n] = crit_sB0['ca_med']
+#     print('-10*np.log10(ca_final_sB_totSC): ')
+#     print(-10*np.log10(ca_final_sB_totSC))
+#     print('-10*np.log10(ca_final_sB0): ')
+#     print(-10*np.log10(ca_final_sB0))
 
+#     error_str = 'ERROR_'
 
-    print('******************* Results ************************')
-    print('-10*np.log10(ca_final_sB_totSC): ')
-    print(-10*np.log10(ca_final_sB_totSC))
-    print('-10*np.log10(ca_final_sB0): ')
-    print(-10*np.log10(ca_final_sB0))
-    print('*******************************************')
-
-    # Save variables
-    title_ca_final_sB0 = data_path + 'ca_final_sB0' + title_str  
-    np.save(title_ca_final_sB0,ca_final_sB0)
-    title_ca_final_sB_totSC = data_path + 'ca_final_sB_totSC' + title_str  
-    np.save(title_ca_final_sB_totSC,ca_final_sB_totSC)
-
-except:
-
-    print('-10*np.log10(ca_final_sB_totSC): ')
-    print(-10*np.log10(ca_final_sB_totSC))
-    print('-10*np.log10(ca_final_sB0): ')
-    print(-10*np.log10(ca_final_sB0))
-
-    error_str = 'ERROR_'
-
-    # Save variables
-    title_ca_final_sB0 = data_path + error_str + 'ca_final_sB0' + title_str  
-    np.save(title_ca_final_sB0,ca_final_sB0)
-    title_ca_final_sB_totSC = data_path + error_str + 'ca_final_sB_totSC' + title_str  
-    np.save(title_ca_final_sB_totSC,ca_final_sB_totSC)
+#     # Save variables
+#     title_ca_final_sB0 = data_path + error_str + 'ca_final_sB0' + title_str  
+#     np.save(title_ca_final_sB0,ca_final_sB0)
+#     title_ca_final_sB_totSC = data_path + error_str + 'ca_final_sB_totSC' + title_str  
+#     np.save(title_ca_final_sB_totSC,ca_final_sB_totSC)
 
