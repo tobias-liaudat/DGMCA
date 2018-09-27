@@ -1,4 +1,4 @@
-# Miscellaneous functions for BGMCA
+# Miscellaneous functions for DGMCA
 
 import numpy as np
 import scipy as sp
@@ -7,9 +7,15 @@ from copy import deepcopy as dp
 from starlet import *
 from munkres import Munkres
 from scipy import special
+import scipy.signal as spsg
 import scipy.linalg as lng
 import math
 from FrechetMean import FrechetMean
+from utils2 import randperm
+import warnings
+warnings.filterwarnings("ignore", message="FutureWarning: Using a non-tuple sequence for multidimensional indexing is deprecated; use `arr[tuple(seq)]` instead of `arr[seq]`. In the future this will be interpreted as an array index, `arr[np.array(seq)]`, which will result either in an error or a different result.")
+
+# FUNCTIONS TO WORK ON THE TRANSFORMED DOMAIN
 
 ###------------------------------------------------------------------------------###
 ################# 2D array reformating into 1D array with sequential 2D square batches.
@@ -279,23 +285,120 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 
     return X_out
 
+##
+# FUNCTIONS TO PREPARE THE DATA TO WORK ON THE TRANSFORMED DOMAIN
 
+def calcWaveletNoiseFactors(N=0, J=4):
+# Calculation of the wavelet noise factors.
 
-###------------------------------------------------------------------------------###
-################# Calculation of pseudo-inverse with threshold in the singular values
-def pInv(A):
 #--- Import modules
     # import numpy as np
+    # from src.starlet import *
+    # from src.utils2 import *
+    # import copy as cp
+    
+    WNFactors = np.zeros([J])
+    
+    sqSize = np.ceil(np.sqrt(N.shape[0]*N.shape[1])).astype(int) 
+    N_sq = cp.deepcopy(N)
+    N_sq.resize(sqSize,sqSize) # Zero padding for the missing values
+          
+    cc, ww = Starlet_Forward(x=N_sq,J=J)
 
-#-- Main algorithm
-    min_cond = 1e-9
-    Ra = np.dot(A.T,A)
-    Ua,Sa,Va = np.linalg.svd(Ra)
-    Sa[Sa < np.max(Sa)*min_cond] = np.max(Sa)*min_cond
-    iRa = np.dot(Va.T,np.dot(np.diag(1./Sa),Ua.T))
+    for it in range(J):
+        WNFactors[it] = np.std(np.reshape(ww[:,:,it],(-1)))
+        
+    
+    return WNFactors
 
-    return np.dot(iRa,A.T)
 
+def input_prep(A_big,S_big,dec_factor,Jdec,normOpt,batch_size,n_obs,SNR_level):
+    
+    # Function parameters
+    n_imgs = S_big.shape[0]
+    img_dim = S_big.shape[1]/(dec_factor)
+ 
+    #--------------------------------#
+    # Data preparation for J = 0
+    S0_J0 = np.zeros([img_dim,img_dim,n_imgs])
+
+    for it in range(n_imgs):
+    #     S0_J0[:,:,it] = S_big[it,::dec_factor,::dec_factor]
+        new_im = spsg.decimate(S_big[it,:,:],dec_factor)
+        new_im = spsg.decimate(new_im.T,dec_factor)
+        S0_J0[:,:,it] = new_im.T
+
+    S0_J0_mat, line_id_J0, r_id_J0, ccx = reshapeDecData(S0_J0,batch_size)
+
+    id_obs = randperm(A_big.shape[0])[0:n_obs]
+    A0_J0_mat = A_big[id_obs,:]
+
+    X0_J0_mat = np.dot(A0_J0_mat,S0_J0_mat)
+
+    # Adding observational noise
+    N_J0 = np.random.randn(X0_J0_mat.shape[0],X0_J0_mat.shape[1])
+    sigma_noise = np.power(10.,(-SNR_level/20.))*np.linalg.norm(X0_J0_mat,ord='fro')/np.linalg.norm(N_J0,ord='fro')
+    N_J0 = sigma_noise*N_J0
+
+    WNFactors = calcWaveletNoiseFactors(N=N_J0, J=5)
+
+    X_J0_mat = X0_J0_mat + N_J0
+
+    data_J0 = {'n_s': n_imgs, 'n_obs': n_obs, 'A0': A0_J0_mat, 'S0': S0_J0_mat, 'X0' : X0_J0_mat, 'X' : X_J0_mat,\
+               'line_id' : line_id_J0, 'r_id' : r_id_J0, 'SNR':SNR_level, 'batch_size':batch_size,\
+               'WNFactors' : WNFactors}
+    
+    #--------------------------------#
+    # Data preparation for J = m
+
+    X_Jm = np.zeros([img_dim,img_dim,X_J0_mat.shape[0]])
+
+    for it in range(X_J0_mat.shape[0]):
+        X_Jm[:,:,it] = recoverDecImg(X_J0_mat[it,:],r_id_J0,line_id_J0)
+    
+    
+    #--------------------------------#
+    # Data preparation for the original GMCA algorithm
+    im_size = X_Jm.shape[0]*X_Jm.shape[1]
+
+    X_GMCA = np.zeros([n_obs,im_size*Jdec])
+    S0_GMCA = np.zeros([n_imgs,im_size*Jdec])
+
+    for it in range(n_obs): 
+        cc, ww = Starlet_Forward(x=X_Jm[:,:,it],J=Jdec)
+
+        for itJ in range(Jdec):
+            
+            if normOpt == 1:
+                norm_factor = WNFactors[0]/(WNFactors[itJ]*1.)
+            else:
+                norm_factor = 1.
+            
+            X_GMCA[it,im_size*itJ:im_size*(itJ+1)] = np.reshape(ww[:,:,itJ],(1,-1))*norm_factor
+
+
+    for it in range(n_imgs):
+        cc, ww = Starlet_Forward(x=S0_J0[:,:,it],J=Jdec)
+
+        for itJ in range(Jdec):
+            
+            if normOpt == 1:
+                norm_factor = WNFactors[0]/(WNFactors[itJ]*1.)
+            else:
+                norm_factor = 1.
+            
+            S0_GMCA[it,im_size*itJ:im_size*(itJ+1)] = np.reshape(ww[:,:,itJ],(1,-1))*norm_factor
+    
+    #--------------------------------#
+    data_GMCA = {'n_s': n_imgs, 'n_obs': n_obs, 'A0': A0_J0_mat, 'S0': S0_J0_mat, 'X_GMCA' : X_GMCA, \
+           'X' : X_Jm, 'line_id' : line_id_J0, 'r_id' : r_id_J0, 'SNR':SNR_level, 'batch_size':batch_size,\
+           'WNFactors' : WNFactors, 'X0' : X0_J0_mat,'S0_GMCA' : S0_GMCA, 'normOpt' : normOpt}
+    
+    return data_GMCA
+    
+
+##
+# FUNCTIONS TO ESTIMATE THE ALPHA (THRESHOLD) PARAMETER
 
 ###------------------------------------------------------------------------------###
  ################# Functions to estimate the Generalized Gaussian parameters
@@ -411,6 +514,24 @@ def alpha_thresh_estimation(A_mean, X, alpha_exp,n):
         GG_alpha_est = 0.01
 
     return GG_alpha_est
+
+
+
+###------------------------------------------------------------------------------###
+################# Calculation of pseudo-inverse with threshold in the singular values
+def pInv(A):
+#--- Import modules
+    # import numpy as np
+
+#-- Main algorithm
+    min_cond = 1e-9
+    Ra = np.dot(A.T,A)
+    Ua,Sa,Va = np.linalg.svd(Ra)
+    Sa[Sa < np.max(Sa)*min_cond] = np.max(Sa)*min_cond
+    iRa = np.dot(Va.T,np.dot(np.diag(1./Sa),Ua.T))
+
+    return np.dot(iRa,A.T)
+
 
 
 ###------------------------------------------------------------------------------###
