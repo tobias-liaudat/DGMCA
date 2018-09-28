@@ -4,7 +4,7 @@
 
 
 # Files
-![alt text](https://gituhb.com/tobias-liaudat/DGMCA/CAE/DGMCA/tree_direc.png)
+![](./Fig/tree_direc.png?raw=true)
 
 ## Testing
 bla bla
