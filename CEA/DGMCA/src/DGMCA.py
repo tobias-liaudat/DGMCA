@@ -3,8 +3,7 @@ WORKING CODE!
 
 Solving de BSS problem when the images are sparse in another domain.
 The parallelization is done only over the columns.
-The three weighting schemes and the three thresholding strategies are functional.
-Permutation of the columns is optional via the shufflingOpt parameter.
+Permutation of the columns is optional via the shufflingOpt parameter (Recomended).
 Threshold strategy: using exponential decay and norm_inf
 Weight for FM strategy: SNR over the S space
 
@@ -33,9 +32,14 @@ Weight for FM strategy: SNR over the S space
 
   Outputs:
    Results : dict with entries:
-        sources    : n x t array (estimated sources)
-        mixmat     : m x n array (estimated mixing matrix)
-
+        if J = 0:
+            sources    : n x t array (estimated sources)
+            mixmat     : m x n array (estimated mixing matrix)
+        if J > 0:
+            sources    : n x t array (estimated sources)
+            mixmat     : m x n array (estimated mixing matrix)
+            images     :
+            
   Description:
     Computes the sources and the mixing matrix with GMCA
 

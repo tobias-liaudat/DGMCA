@@ -1,6 +1,6 @@
 # DGMCA
 (or Distributed Generalized Morphological Component Analysis)
-**bold letters**
+**Not yet finished..**
 
 
 # Files
