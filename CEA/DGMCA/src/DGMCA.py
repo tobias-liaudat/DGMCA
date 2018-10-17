@@ -1,5 +1,7 @@
 """
-WORKING CODE!
+WORKING CODE! 
+
+.
 
 Solving de BSS problem when the images are sparse in another domain.
 The parallelization is done only over the columns.
