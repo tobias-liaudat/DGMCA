@@ -1,7 +1,10 @@
 """
-WORKING CODE! 
+Distributed Generalized Morphological Analysis (DGMCA)
 
-.
+This code is not actually parallelized but it was done to allow an easy preparation of a 
+future parallelized version.
+The code solves the Blind Source Separation (BSS) problem giving as a result the 
+source and the mixing matrices.
 
 Solving de BSS problem when the images are sparse in another domain.
 The parallelization is done only over the columns.
@@ -10,27 +13,34 @@ Threshold strategy: using exponential decay and norm_inf
 Weight for FM strategy: SNR over the S space
 
   Usage:
-    Results = GMCA(X,n=2,maxts = 7,mints=3,nmax=100,L0=0,verb=0,Init=0,BlockSize= None,Kmax=0.5,AInit=None,tol=1e-6)
-
+    Results = GMCA(X,n=2,mints=3,nmax=100,L0=0,verb=0,Init=0,BlockSize= None,Kmax=0.5,AInit=None,tol=1e-6)
+    Results = DGMCA(X,n=5,mints=3,nmax=100,L0=1,verb=0,Init=0,BlockSize= None,Kmax=1.,AInit=None,tol=1e-6,\
+                    subBlockSize=500, SCOpt=1, alphaEstOpt=1,alpha_exp=2.)
 
   Inputs:
-    X    : m x t array (input data, each row corresponds to a single observation)
-    n     : scalar (number of sources to be estimated)
-    maxts : scalar (initial value of the k-mad thresholding)
-    mints : scalar (final value of the k-mad thresholding)
-    L0 : if set to 1, L0 rather than L1 penalization
-    nmax  : scalar (number of iterations)
-    Init  : scalar (if set to 0: PCA-based initialization, if set to 1: random initialization)
-    verb   : boolean (if set to 1, in verbose mode)
-    Kmax : scalar (maximal L0 norm of the sources. Being a percentage, it should be between 0 and 1)
-    AInit : if not None, provides an initial value for the mixing matrix
-    tol : tolerance on the mixing matrix criterion
-    SCOpt : Weighting for the partially correlated sources
-                # 0 --> Deactivated
-                # 1 --> Activated
-    alphaEstOpt : Use online estimation of alpha_exp thresholding parameter
-                # 0 --> Deactivated
-                # 1 --> Activated
+    X            : m x t array (input data, each row corresponds to a single observation)
+    n            : scalar (number of sources to be estimated)
+    mints        : scalar (final value of the k-mad thresholding)
+    nmax         : scalar (number of iterations)
+    q_f          : scalar (amca parameter to evaluate to correlation between the sources; should be lower than 1)
+    L0           : if set to 1, L0 rather than L1 penalization
+    verb         : boolean (if set to 1, in verbose mode)
+    Init         : scalar (if set to 0: PCA-based initialization, if set to 1: random initialization)
+    BlockSize    : scalar (should be lower than number of sources. The number of random sources to update at each iteration)
+    Kmax         : scalar (maximal L0 norm of the sources. Being a percentage, it should be between 0 and 1)
+    AInit        : if not None, provides an initial value for the mixing matrix
+    tol          : scalar (tolerance on the mixing matrix criterion)
+    subBlockSize : scalar (size of the subproblem (t_j), must be smaller than t(columns of X).)
+    alpha_exp    : scalar (parameter controling the exponential decay of the thresholding strategy)
+    alphaEstOpt  : Use online estimation for the alpha_exp thresholding parameter
+                    # 0 --> Deactivated
+                    # 1 --> Activated
+    SCOpt        : Weighting for the partially correlated sources
+                    # 0 --> Deactivated
+                    # 1 --> Activated
+    J            : scalar (wavelet decomposition level. J=0 means )
+    WNFactors    :
+    normOpt      :
 
   Outputs:
    Results : dict with entries:
@@ -64,9 +74,9 @@ from FrechetMean import FrechetMean
 from misc_bgmca2 import *
 from starlet import *
 
-################# AMCA Main function
+################# DGMCA Main function
 
-def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,\
+def DGMCA(X,n=2,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,\
     Kmax=0.5,AInit=None,tol=1e-6,subBlockSize=100,alphaEstOpt=1,SCOpt=1,alpha_exp=2.,J=0\
     ,WNFactors=0,normOpt=0):
 
@@ -101,7 +111,7 @@ def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize=
     S = np.dot(A.T,Xw);
 
     # Call the core algorithm
-    S,A = Core_DGMCA(X=Xw,A=A,S=S,n=n,maxts=maxts,q_f=q_f,BlockSize = BlockSize,tol=tol,kend = mints,nmax=nmax,L0=L0,\
+    S,A = Core_DGMCA(X=Xw,A=A,S=S,n=n,q_f=q_f,BlockSize = BlockSize,tol=tol,kend = mints,nmax=nmax,L0=L0,\
         verb=verb,Kmax=Kmax,subBlockSize=subBlockSize,SCOpt=SCOpt,alphaEstOpt=alphaEstOpt,alpha_exp=alpha_exp);
 
     if J > 0:
@@ -124,7 +134,7 @@ def DGMCA(X,n=2,maxts = 7,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize=
 
 ################# DGMCA internal code
 
-def Core_DGMCA(X=0,n=0,A=0,S=0,maxts=7,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=1,verb=0,Kmax=0.5,\
+def Core_DGMCA(X=0,n=0,A=0,S=0,kend=3,q_f=0.1,nmax=100,BlockSize = 2,L0=1,verb=0,Kmax=0.5,\
     tol=1e-6, subBlockSize=100, SCOpt=1,alphaEstOpt=1,alpha_exp=2.):
 
 #--- Import useful modules

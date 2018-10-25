@@ -4,7 +4,7 @@ import numpy as np
 from utils2 import divisorGenerator
 from utils2 import Make_Experiment_GG
 from misc_bgmca2 import *
-from DGMCA import DGMCA as dgmca_new
+from DGMCA import DGMCA as dgmca
 from GMCA import GMCA as gmca
 import copy as cp
 from tqdm import tqdm
@@ -16,6 +16,7 @@ plots_path = '../../files/plots/'
 totalSize = 4000
 
 # For the batch sizes: Use all the divisors of totalSize bigger than minSizeBlock
+# Or you can define the list manually by changing the array: divisors
 minSizeBlock = 500
 divisors = list(divisorGenerator(totalSize))
 divisors = np.array(divisors)
@@ -24,9 +25,9 @@ divisors = divisors[divisors>=minSizeBlock]
 # Define your own list of batch sizes
 divisors = np.array([200, 400, 600])# 200, 250 ,400, 500, 1000, 2500])
 
-n_s = 5
-n_obs = 20
-rho = 0.5 # GG generation parameter
+n_s = 5 # Number of sources
+n_obs = 20 # Number of observations
+rho = 0.5 # Generalized Gaussian generation parameter
 alpha_init = 2. # Alpha parameter for the thresholding strategy
 
 numIts = 4
@@ -77,7 +78,7 @@ for it_n in tqdm(range(numIts)):
 
 
         time1 = time.time()
-        Results_sB0 = dgmca_new(cp.deepcopy(X),n=n_s,maxts = 7,mints=3,nmax=100,L0=1,verb=0,Init=0,\
+        Results_sB0 = dgmca(cp.deepcopy(X),n=n_s,mints=3,nmax=100,L0=1,verb=0,Init=0,\
                             BlockSize= None,Kmax=1.,AInit=None,tol=1e-6,subBlockSize=sizeBlock,\
                             SCOpt=1,alphaEstOpt=1,alpha_exp=alpha_init)
         time_DGMCA[it1,it_n] = time.time() - time1

@@ -1,0 +1,4 @@
+# Ignoring
+
+plots/*.pdf
+data/*.npy
