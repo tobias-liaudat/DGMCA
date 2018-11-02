@@ -1,4 +1,4 @@
-# Miscellaneous functions for BGMCA
+# Miscellaneous functions for GMCA
 
 ###------------------------------------------------------------------------------###
  ################# Calculation of pseudo-inverse with threshold in the singular values
