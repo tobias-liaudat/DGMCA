@@ -7,23 +7,23 @@ The main theoretical framework of the algorith is taken from the method GMCA [1]
 
 The original problem of factorizing a matrix X (observation matrix) into two matrices A (mixing matrix) and S (source matrix) is divided into sub-problems as it can be seen in the following figure:
 
-![](/Fig/v1.png?raw=true)
+![](./Fig/v1.png?raw=true)
 
 A (very) basic scheme of the algorithm follows:
 
-![](/Fig/dgmca2_schema.png?raw=true)
+![](./Fig/dgmca2_schema.png?raw=true)
 
 One of the essential points in this novel method is the fusion of the different estimations of the mixing matrices. It is done by doing an optimization on the hypersphere, a Riemannian manifold, by means of a Fréchet Mean follwing [2]. The setup of the algorith forces the columns of the mixing matrix to live in that manifold. 
 
 The next scheme illustrates the fusion of the mixing matrices.
 
-![](/Fig/ill_frechetmean.png?raw=true)
+![](./Fig/ill_frechetmean.png?raw=true)
 
 Finally, if the observations are not sparse (or approximatively sparse) in its natural domain, by means of the parameter *J*, a wavelet decomposition (starlets or Isotropic Undecimated Wavelets) is preformed in order to solve the BSS problem.
 
 A basic scheme of the wavelet decomposition is presented next:
 
-![](/Fig/transform_decomp.png?raw=true)
+![](./Fig/transform_decomp.png?raw=true)
 
 
 
@@ -38,3 +38,7 @@ A basic scheme of the wavelet decomposition is presented next:
 In the first one the observations are generated using a Generalized Gaussian model with a given beta parameter. The test solves the BSS problem for different batch sizes.
 
 The second one uses a dataset of realistic astrophysical observations (sent upon request due to size ~170Mb). The wavelet decomposition is used for this dataset as the astrophysical images are not sparse on the direct domain.
+
+
+### Acknowledgements
+The work was done by **Tobias Liaudat** in an internship at the [CosmoStat Laboratory](http://www.cosmostat.org/) at the CEA-Saclay under the supervision of **Jérôme Bobin**.
