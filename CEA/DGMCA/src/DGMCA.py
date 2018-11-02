@@ -1,5 +1,8 @@
 """
 Distributed Generalized Morphological Analysis (DGMCA)
+Python 2.7 version. 
+
+
 
 This code is not actually parallelized but it was done to allow an easy preparation of a 
 future parallelized version.
@@ -13,9 +16,13 @@ Threshold strategy: using exponential decay and norm_inf
 Weight for FM strategy: SNR over the S space
 
   Usage:
-    Results = GMCA(X,n=2,mints=3,nmax=100,L0=0,verb=0,Init=0,BlockSize= None,Kmax=0.5,AInit=None,tol=1e-6)
+    Ex for J=0:
     Results = DGMCA(X,n=5,mints=3,nmax=100,L0=1,verb=0,Init=0,BlockSize= None,Kmax=1.,AInit=None,tol=1e-6,\
-                    subBlockSize=500, SCOpt=1, alphaEstOpt=1,alpha_exp=2.)
+    subBlockSize=500, SCOpt=1,alphaEstOpt=1,alpha_exp=0.5)
+    Ex. for J>0:
+    Results = DGMCA(X,n=5,mints=3,nmax=100,L0=1,verb=0,Init=0,BlockSize= None,Kmax=1.,AInit=None,tol=1e-6,\
+    subBlockSize=500, SCOpt=1,alphaEstOpt=1,alpha_exp=0.5,J=3,WNFactors=WNFactors, normOpt=normOpt)
+
 
   Inputs:
     X            : m x t array (input data, each row corresponds to a single observation)
@@ -38,10 +45,13 @@ Weight for FM strategy: SNR over the S space
     SCOpt        : Weighting for the partially correlated sources
                     # 0 --> Deactivated
                     # 1 --> Activated
-    J            : scalar (wavelet decomposition level. J=0 means )
-    WNFactors    :
-    normOpt      :
+    J            : scalar (Wavelet decomposition level. J=0 means no decomposition at all.)
+    normOpt      : Normalize wavelet decomposition levels (for J>0)
+                    # 0 --> Deactivated
+                    # 1 --> Activated
+    WNFactors    : Factors to correct the amplitude of the different levels of the wavelet decomposition (output of the data_input_preparation() function)(for J>0)
 
+ 
   Outputs:
    Results : dict with entries:
         if J = 0:
@@ -53,7 +63,7 @@ Weight for FM strategy: SNR over the S space
             images     :
             
   Description:
-    Computes the sources and the mixing matrix with GMCA
+    Computes the sources and the mixing matrix with DGMCA.
 
   Example:
      S,A = GMCA(X,n=2,mints=0,nmax=500) will perform GMCA assuming that the data are noiseless
@@ -106,7 +116,7 @@ def DGMCA(X,n=2,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,\
         A = cp.deepcopy(AInit)
 
     for r in range(0,n):
-        A[:,r] = A[:,r]/lng.norm(A[:,r]) # - We should do better than that
+        A[:,r] = A[:,r]/lng.norm(A[:,r]) 
 
     S = np.dot(A.T,Xw);
 

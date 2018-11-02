@@ -287,7 +287,7 @@ def recoverDecData(X,r_id,line_id,J=0,ccX=0,deNormOpt=0,WNFactors=0):
 
 ##
 # FUNCTIONS TO PREPARE THE DATA TO WORK ON THE TRANSFORMED DOMAIN
-
+###------------------------------------------------------------------------------###
 def calcWaveletNoiseFactors(N=0, J=4):
 # Calculation of the wavelet noise factors.
 
@@ -312,8 +312,33 @@ def calcWaveletNoiseFactors(N=0, J=4):
     return WNFactors
 
 
+###------------------------------------------------------------------------------###
 def input_prep(A_big,S_big,dec_factor,Jdec,normOpt,batch_size,n_obs,SNR_level):
-    
+    """
+    Function to prepare the data of the "SyntheticAstroData.mat" to be used by the DGMCA algorithm.
+    - Performs a decimation followed by a low pass filter to avoid aliasing and reduce the image dimensions.
+    - Adds additive white noise so the observations have the desired SNR.
+    - Performs a random selection of the observations till the desired number of observations.
+    - Calculates the wavelet noise factors (scalar correcting the amplitude modification by the used wavelet)
+    - Reshapes the data from a 3D cube (2D images stacked over the 3rd axis) into a 2D matrix where each line 
+    corresponds to one 2D image of the 3D cube.
+    - Reshapes the data when using wavelets so it can be used by the original GMCA algorithm to benchmark performance.
+
+    Code extract from "data_input_preparation()":
+        sim_path = input_data_path + 'SyntheticAstroData.mat'
+        imp_data = spio.loadmat(sim_path)
+        A_big = imp_data[',mixmat']
+        S_big = imp_data['sources']
+        Jdec = 2 # Wavelet decomposition levels
+        dec_factor = 32 # Subsampling for each dimension of the image
+        normOpt = 1 # Normalize levels of the wavelet decomposition
+        batch_size = 2048 
+        n_obs = 250
+        SNR_level = 60.0
+        data_GMCA = input_prep(A_big,S_big,dec_factor,Jdec,normOpt,batch_size,n_obs,SNR_level)
+
+    """
+
     # Function parameters
     n_imgs = S_big.shape[0]
     img_dim = S_big.shape[1]/(dec_factor)
@@ -464,8 +489,13 @@ def GG_parameter_estimation(x,optHalf = 0):
 
 
 def alpha_thresh_estimation(A_mean, X, alpha_exp,n):
-#   Sources must not be thresholded for this estimation. 
-#   Estimation sensible to the noise level of the observations.
+    """     
+    Function that estimates the best thresholding alpha parameter for the data used.
+
+    Sources must not be thresholded for this estimation. 
+    Estimation sensible to the noise level of the observations.
+
+    """
 
 #--- Import modules
     # import numpy as np
@@ -587,10 +617,15 @@ def DGMCA_CorrectPerm(cA0,cA):
 
 
 ###------------------------------------------------------------------------------###
-# Function to apply the Frechet Mean over the columns of a group of matrices.
-# The columns are not in order so they have to be rearanged before regarding a reference matrix
-# The arangement is done by using only the A matrix and not the S matrix
+
 def DGMCA_FrechetMean(As = 0, Aref = 0, w = 0):
+    """
+    Function to apply the Frechet Mean over the columns of a group of matrices.
+    The columns are not in order so they have to be rearanged before regarding a reference matrix.
+    The arangement is done by using only the A matrix and not the S matrix. 
+    It is done using the Munkres (or Hungarian) algorithm.
+
+    """
 #--- Input variables dimensions and values
     # dim As = [n_obs,n_s,numBlock]
     # dim Aref = [n_obs,n_s]
@@ -622,7 +657,7 @@ def DGMCA_FrechetMean(As = 0, Aref = 0, w = 0):
                 A_FMean[:,it2] = FrechetMean(As[:,it2,:],w=w[it2,:])
 
         else:
-            A_FMean[:,it2] = np.reshape(As[:,it2,:],As.shape[0])#,len(As[:,it2,:]))
+            A_FMean[:,it2] = np.reshape(As[:,it2,:],As.shape[0])
         
     return A_FMean
 
@@ -801,7 +836,6 @@ def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0)
     # import numpy as np
 
     As_ = cp.deepcopy(As)
-    # Ss_ = cp.deepcopy(Ss) # FAST_
 
     if (Ss.shape[1]%sizeBlock) == 0:
         lstBlocks = np.arange(As.shape[2]+1)*sizeBlock
@@ -813,21 +847,21 @@ def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0)
     for it1 in range(As.shape[2]):
         S0 = Sref[:,lstBlocks[it1]:lstBlocks[it1+1]]
         cA = As_[:,:,it1]
-        cS = Ss[:,lstBlocks[it1]:lstBlocks[it1+1]] # cS = Ss_[:,lstBlocks[it1]:lstBlocks[it1+1]]
+        cS = Ss[:,lstBlocks[it1]:lstBlocks[it1+1]] 
 
         A0q,S0q,Aq,Sq,IndE  = CorrectPerm_eval(Aref,S0,cA,cS,incomp=0)
 
         As_[:,:,it1] = Aq 
-        # Ss_[:,lstBlocks[it1]:lstBlocks[it1+1]] = Sq
 
     return As_
 
 ###------------------------------------------------------------------------------###
 ################# Frechet Mean main function
 
-# Function to apply the Frechet Mean over the columns of a group of matrices.
-# The columns are not in order so they have to be rearanged before regarding a reference matrix
 def matrix_FrechetMean(As = 0, Ss = 0, Aref = 0, Sref = 0 ,sizeBlock = 0, w = 0):
+    # Function to apply the Frechet Mean over the columns of a group of matrices.
+    # The columns are not in order so they have to be rearanged before regarding a reference matrix
+
 #--- Input variables dimensions and values
     # dim As = [n_obs,n_s,numBlock]
     # dim Ss = [n_s,sizeBlock*numBlock]
