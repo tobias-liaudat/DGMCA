@@ -95,7 +95,6 @@ def DGMCA(X,n=2,mints=3,nmax=100,q_f=0.1,L0=0,verb=0,Init=0,BlockSize= None,\
 
     if J > 0:
         Xw, line_id, r_id, ccX = reshapeDecData(X,batch_size=subBlockSize,J=J,normOpt=normOpt,WNFactors=WNFactors)
-        print Xw.shape
     else:
         line_id = 0
         r_id = 0

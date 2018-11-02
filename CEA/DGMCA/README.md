@@ -40,11 +40,11 @@ A basic scheme of the wavelet decomposition is presented next:
 
 ## Testing
 
-(Up to now) There are two main tests *test_basic* and *test_basic_synthetic_data*. Each test comes as a python code as well as in a jupyter notebook.
+*(Up to now)* There are two main tests *test_basic* and *test_basic_synthetic_data*. Each test comes as a python code as well as in a jupyter notebook.
 
 In the first one the observations are generated using a Generalized Gaussian model with a given beta parameter. The test solves the BSS problem for different batch sizes.
 
-The second one uses a dataset of realistic astrophysical observations (sent upon request due to size ~170Mb). The wavelet decomposition is used for this dataset as the astrophysical images are not sparse on the direct domain.
+The second one uses a dataset of realistic astrophysical observations (*sent upon request due to size ~170Mb*). The wavelet decomposition is used for this dataset as the astrophysical images are not sparse on the direct domain.
 
 
 #### Acknowledgements
