@@ -7,7 +7,9 @@ The main theoretical framework of the algorith is taken from the method GMCA [1]
 
 The original problem of factorizing a matrix X (observation matrix) into two matrices A (mixing matrix) and S (source matrix) is divided into sub-problems as it can be seen in the following figure:
 
-![](./Fig/v1.png?raw=true)
+<p align="center">
+  <img src="./Fig/v1.png?raw=true" width="350" title="hover text">
+</p>
 
 A (very) basic scheme of the algorithm follows:
 
@@ -42,3 +44,5 @@ The second one uses a dataset of realistic astrophysical observations (sent upon
 
 ### Acknowledgements
 The work was done by **Tobias Liaudat** in an internship at the [CosmoStat Laboratory](http://www.cosmostat.org/) at the CEA-Saclay under the supervision of **Jérôme Bobin**.
+
+![](./Fig/v1.png?raw=true)
