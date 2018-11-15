@@ -45,12 +45,10 @@ Original GMCA algorithm with the norm Inf thresholding strategy with AMCA reweig
 
 """
 
-# from pyGMCA.common.utils import randperm
-# from pyGMCA.common.utils import mad
-from utils2 import randperm
-from utils2 import mad
 
-# Import from utils -> randperm et mad
+from utils_dgmca import randperm
+from utils_dgmca import mad
+# Import from utils_dgmca -> randperm et mad
 
 ################# AMCA Main function
 

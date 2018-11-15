@@ -11,7 +11,7 @@ import scipy.signal as spsg
 import scipy.linalg as lng
 import math
 from FrechetMean import FrechetMean
-from utils2 import randperm
+from utils_dgmca import randperm
 import warnings
 warnings.filterwarnings("ignore", message="FutureWarning: Using a non-tuple sequence for multidimensional indexing is deprecated; use `arr[tuple(seq)]` instead of `arr[seq]`. In the future this will be interpreted as an array index, `arr[np.array(seq)]`, which will result either in an error or a different result.")
 
@@ -294,7 +294,7 @@ def calcWaveletNoiseFactors(N=0, J=4):
 #--- Import modules
     # import numpy as np
     # from src.starlet import *
-    # from src.utils2 import *
+    # from src.utils_dgmca import *
     # import copy as cp
     
     WNFactors = np.zeros([J])
@@ -318,8 +318,8 @@ def input_prep(A_big,S_big,dec_factor,Jdec,normOpt,batch_size,n_obs,SNR_level):
     Function to prepare the data of the "SyntheticAstroData.mat" to be used by the DGMCA algorithm.
     - Performs a decimation followed by a low pass filter to avoid aliasing and reduce the image dimensions.
     - Adds additive white noise so the observations have the desired SNR.
-    - Performs a random selection of the observations till the desired number of observations.
-    - Calculates the wavelet noise factors (scalar correcting the amplitude modification by the used wavelet)
+    - Performs a random selection of the observations till the desired number of observations is reached.
+    - Calculates the wavelet noise factors (the scalar correcting the amplitude modifications by the used wavelet)
     - Reshapes the data from a 3D cube (2D images stacked over the 3rd axis) into a 2D matrix where each line 
     corresponds to one 2D image of the 3D cube.
     - Reshapes the data when using wavelets so it can be used by the original GMCA algorithm to benchmark performance.

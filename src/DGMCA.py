@@ -78,10 +78,10 @@ import numpy as np
 import scipy.linalg as lng
 import copy as cp
 import time
-from utils2 import randperm
-from utils2 import mad
+from utils_dgmca import randperm
+from utils_dgmca import mad
 from FrechetMean import FrechetMean
-from misc_bgmca2 import *
+from misc_dgmca import *
 from starlet import *
 
 ################# DGMCA Main function

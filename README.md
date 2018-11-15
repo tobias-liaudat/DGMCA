@@ -3,6 +3,8 @@
 
 Algorithm to solve the Blind Source Separation (BSS) problem in a parallelized way.
 
+Paper: In preparation.
+
 The main theoretical framework of the algorith is taken from the method GMCA [1]. This new algorithm allows to tackle the BSS problem in a faster way as well as for very-large datasets that could not be treated before. 
 
 The original problem of factorizing a matrix X (observation matrix) into two matrices A (mixing matrix) and S (source matrix) is divided into sub-problems as it can be seen in the following figure:

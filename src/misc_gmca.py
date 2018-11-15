@@ -281,7 +281,7 @@ def matrix_outlierDistance(A_FM = 0,Ai = 0):
     return np.amax(np.ones(np.shape(dist)) - dist)
 
 def matrix_CorrectPermutations(As = 0, Ss = 0, Aref = 0, Sref = 0,sizeBlock = 0):
-    # from utils2 import CorrectPerm_fast
+    # from utils_dgmca import CorrectPerm_fast
     import copy as cp
     import numpy as np
 
@@ -322,7 +322,7 @@ def matrix_FrechetMean(As = 0, Ss = 0, Aref = 0, Sref = 0 ,sizeBlock = 0, w = 0)
 
 #--- Import useful modules
     from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
+    # from utils_dgmca import CorrectPerm_fast
     import numpy as np
 
 #--- Main code   
@@ -367,7 +367,7 @@ def easy_matrix_FrechetMean(As = 0, Aref = 0, w = 0):
 
 #--- Import useful modules
     from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
+    # from utils_dgmca import CorrectPerm_fast
     import numpy as np
 
     A_FMean = np.zeros(Aref.shape)
@@ -398,7 +398,7 @@ def easy_matrix_FrechetMean2(As = 0, Aref = 0, w = 0):
 
 #--- Import useful modules
     from FrechetMean import FrechetMean
-    # from utils2 import CorrectPerm_fast
+    # from utils_dgmca import CorrectPerm_fast
     import numpy as np
 
     A_FMean = np.zeros(Aref.shape)

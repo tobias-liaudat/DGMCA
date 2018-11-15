@@ -272,7 +272,7 @@ def Gen_BG_Mixtures_Outliers(m=2,n=2,t=1024,p=0.1,po=0.01):
 
 def CorrectPerm(cA0,S0,cA,S,incomp=0):
 
-    from misc_bgmca import maximizeTrace
+    from misc_gmca import maximizeTrace
 
     A0 = cp.copy(cA0)
     A = cp.copy(cA)

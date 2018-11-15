@@ -4,8 +4,8 @@ sys.path.append('../')
 import numpy as np
 import scipy.io as spio
 from starlet import *
-from misc_bgmca2 import *
-from utils2 import *
+from misc_dgmca import *
+from utils_dgmca import *
 import copy as cp
 
 def data_input_preparation(Jdec=2, dec_factor=16, batch_size=2048, n_obs=250, SNR_level=60.0, normOpt=1,\
