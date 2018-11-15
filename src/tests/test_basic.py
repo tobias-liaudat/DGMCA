@@ -1,9 +1,9 @@
 import sys
 sys.path.append('../')
 import numpy as np
-from utils2 import divisorGenerator
-from utils2 import Make_Experiment_GG
-from misc_bgmca2 import *
+from utils_dgmca import divisorGenerator
+from utils_dgmca import Make_Experiment_GG
+from misc_dgmca import *
 from DGMCA import DGMCA as dgmca
 from GMCA import GMCA as gmca
 import copy as cp
@@ -23,14 +23,14 @@ divisors = np.array(divisors)
 divisors = divisors[divisors>=minSizeBlock]
 
 # Define your own list of batch sizes
-divisors = np.array([200, 400, 600])# 200, 250 ,400, 500, 1000, 2500])
+divisors = np.array([200, 200, 250 ,400, 500, 1000, 2500])
 
 n_s = 5 # Number of sources
 n_obs = 20 # Number of observations
 rho = 0.5 # Generalized Gaussian generation parameter
 alpha_init = 2. # Alpha parameter for the thresholding strategy
 
-numIts = 4
+numIts = 5
 
 CA_DGMCA = np.zeros([2,len(divisors),numIts])
 CA_GMCA = np.zeros([2,numIts])
@@ -54,6 +54,7 @@ print("Test saving name:")
 print(title_str)
 print('*******************************************')
 
+print('Processing...')
 
 for it_n in tqdm(range(numIts)):
 

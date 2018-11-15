@@ -1,9 +1,9 @@
 import sys
 sys.path.append('../')
 import numpy as np
-from utils2 import divisorGenerator
-from utils2 import Make_Experiment_GG
-from misc_bgmca2 import *
+from utils_dgmca import divisorGenerator
+from utils_dgmca import Make_Experiment_GG
+from misc_dgmca import *
 from DGMCA import DGMCA as dgmca
 from GMCA import GMCA as gmca
 from data_input_preparation import data_input_preparation
@@ -17,7 +17,7 @@ plots_path = '../../files/plots/'
 
 
 Jdec = 2
-dec_factor = 64
+dec_factor = 32
 batch_size = 1024
 n_s = 5 # Number of sources
 n_obs = 250 # Number of observations
@@ -26,6 +26,7 @@ normOpt = 1
 alpha_init = 2. # Alpha parameter for the thresholding strategy
 numIts = 1
 
+print('Preparing input data...')
 data_DGMCA = data_input_preparation(Jdec=Jdec, dec_factor=dec_factor, batch_size=batch_size, n_obs=n_obs, SNR_level=SNR_level, normOpt=normOpt,\
 	input_data_path=input_data_path, output_data_path=data_path)
 
@@ -62,6 +63,7 @@ print("Test saving name:")
 print(title_str)
 print('*******************************************')
 
+print('Processing...')
 
 for it_n in tqdm(range(numIts)):
 
@@ -115,15 +117,15 @@ print('GMCA mean time:  %f  / DGMCA mean time:  %f'%(time_GMCA_mean,time_DGMCA_m
 print('GMCA total time: %f  / DGMCA total time: %f'%(time_GMCA_total,time_DGMCA_total))
 print(' ')
 print('**************** MEAN of experiments ***************************')
-print('Total size = %d, CA_GMCA(med) = %f,  CA_GMCA(mean) = %f ;'%(totalSize,dB_CA_GMCA_mean[1],dB_CA_GMCA_mean[0]))
+print('Total size = %d, CA_GMCA(med) = %f,      CA_GMCA(mean) = %f  ;'%(totalSize,dB_CA_GMCA_mean[1],dB_CA_GMCA_mean[0]))
 print('*******************************************')
-print('Batch size = %d, CA_DGMCA(med) = %f,  CA_DGMCA(mean) = %f ;'%(batch_size,dB_CA_DGMCA_mean[1],dB_CA_DGMCA_mean[0]))
+print('Batch size = %d, CA_DGMCA(med) = %f,     CA_DGMCA(mean) = %f ;'%(batch_size,dB_CA_DGMCA_mean[1],dB_CA_DGMCA_mean[0]))
 print('*******************************************')
 print(' ')
 print('**************** MEDIAN of experiments ***************************')
-print('Total size = %d, CA_GMCA(med) = %f,  CA_GMCA(mean) = %f ;'%(totalSize,dB_CA_GMCA_med[1],dB_CA_GMCA_med[0]))
+print('Total size = %d, CA_GMCA(med) = %f,      CA_GMCA(mean) = %f  ;'%(totalSize,dB_CA_GMCA_med[1],dB_CA_GMCA_med[0]))
 print('*******************************************')
-print('Batch size = %d, CA_DGMCA(med) = %f,  CA_DGMCA(mean) = %f ;'%(batch_size,dB_CA_DGMCA_med[1],dB_CA_DGMCA_med[0]))
+print('Batch size = %d, CA_DGMCA(med) = %f,     CA_DGMCA(mean) = %f ;'%(batch_size,dB_CA_DGMCA_med[1],dB_CA_DGMCA_med[0]))
 print('*******************************************')
 print(' ')
 
