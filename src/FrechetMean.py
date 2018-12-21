@@ -143,7 +143,7 @@ def CorrectPerm(cA0,S0,cA,S,optEchAS=0):
         Diff = abs(np.dot(lng.inv(np.dot(A0.T,A0)),np.dot(A0.T,A)))
     except np.linalg.LinAlgError:
         Diff = abs(np.dot(np.linalg.pinv(A0),A))
-        print('WARNING, PSEUDO INVERSE TO CORRECT PERMUTATIONS')
+        #print('WARNING, PSEUDO INVERSE TO CORRECT PERMUTATIONS')
 
     Sq = np.ones(np.shape(S))
     ind = np.linspace(0,nX[1]-1,nX[1])

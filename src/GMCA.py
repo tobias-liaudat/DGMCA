@@ -244,12 +244,12 @@ def Core_GMCA(X=0,n=0,A=0,S=0,q_f = 0.1,maxts=7,kend=3,nmax=100,BlockSize = 2,L0
                     St[(abs(St) < thrd)] = 0
                     indNZ = np.where(abs(St) >= thrd)[0]
 
-                    if len(indNZ) == 0:
-                        print(it)
-                        print('len(indNZ) == 0')
-                        print('Thrd: %f' %(thrd))
-                        print('S_norm_inf: %f' %(S_norm_inf))
-                        print('sigma_noise: %f' %(sigma_noise))
+                    # if len(indNZ) == 0:
+                    #     print(it)
+                    #     print('len(indNZ) == 0')
+                    #     print('Thrd: %f' %(thrd))
+                    #     print('S_norm_inf: %f' %(S_norm_inf))
+                    #     print('sigma_noise: %f' %(sigma_noise))
                         # St = np.zeros(np.shape(St)) # No value passed the thresholding
 
                     # if L0 == 0:
