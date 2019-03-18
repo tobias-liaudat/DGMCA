@@ -4,5 +4,4 @@ files/
 src/*/*.pyc
 src/*.pyc
 src/old/
-notebooks/plots/*.pdf
-notebooks/data/*.npy
+
