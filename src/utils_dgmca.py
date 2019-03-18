@@ -210,7 +210,7 @@ def Make_Experiment_GG(n_s=2,n_obs=2,t_samp=1024,noise_level=40,dynamic=0,CondNu
         for r in range(10):
             Uq,Sq,Vq = np.linalg.svd(A0)
             Sq = 1./np.linspace(1,CondNumber,n_s)
-            A0 = np.dot(Uq,np.dot(np.diag(Sq),Vq.T))
+            A0 = np.dot(Uq[:,0:n_s],np.dot(np.diag(Sq),Vq.T))
             A0 = np.dot(A0,np.diag(1./np.sqrt(np.sum(A0*A0,axis=0))))
 
     S0= np.dot(np.diag(1./np.sqrt(np.sum(S*S,axis=1))),S)
