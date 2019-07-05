@@ -3,7 +3,7 @@
 
 Algorithm to solve the Blind Source Separation (BSS) problem in a parallelized way.
 
-Paper: In preparation.
+Article of the [SPARS](http://www.spars-workshop.org/en/index.html) 2019 conference:Tobias Liaudat, Jerome Bobin, Christophe Kervazo. Distributed sparse BSS for large-scale datasets.2019. hal-02088466. [(pdf)](https://hal.archives-ouvertes.fr/hal-02088466/document)
 
 The main theoretical framework of the algorith is taken from the method GMCA [1]. This new algorithm allows to tackle the BSS problem in a faster way as well as for very-large datasets that could not be treated before. 
 
