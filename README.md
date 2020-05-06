@@ -1,6 +1,8 @@
 # DGMCA
 **(or Distributed Generalized Morphological Component Analysis)**
 
+New DGMCA [article](https://hal.archives-ouvertes.fr/hal-02426991/) available! 
+
 Algorithm to solve the Blind Source Separation (BSS) problem in a parallelized way.
 
 Article of the [SPARS](http://www.spars-workshop.org/en/index.html) 2019 conference:Tobias Liaudat, Jerome Bobin, Christophe Kervazo. Distributed sparse BSS for large-scale datasets.2019. hal-02088466. [(pdf)](https://hal.archives-ouvertes.fr/hal-02088466/document)
