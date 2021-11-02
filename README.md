@@ -1,7 +1,13 @@
 # DGMCA
 **(or Distributed Generalized Morphological Component Analysis)**
 
-New DGMCA [article](https://hal.archives-ouvertes.fr/hal-02426991/) available! 
+***
+
+New DGMCA [article](https://hal.archives-ouvertes.fr/hal-02426991/) available accepted at Elsevier's DSP journal [DOI](https://doi.org/10.1016/j.dsp.2020.102827).
+
+The code for the journal article can be found in this [github repo](https://github.com/jbobin/dGMCA).
+
+***
 
 Algorithm to solve the Blind Source Separation (BSS) problem in a parallelized way.
 
